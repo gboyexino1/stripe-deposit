@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay Your Deposit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0f0e0d;
+      --paper: #f9f6f1;
+      --accent: #c8a45a;
+      --accent-dark: #a8843a;
+      --muted: #7a746c;
+      --border: #e2ddd6;
+      --success: #2d6a4f;
+      --error: #b94040;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 10%, rgba(200,164,90,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 90%, rgba(200,164,90,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 2px 40px rgba(15,14,13,0.07), 0 1px 3px rgba(15,14,13,0.04);
+      position: relative;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 2rem; right: 2rem;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      border-radius: 0 0 3px 3px;
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .logo-icon svg { width: 24px; height: 24px; fill: white; }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      font-weight: 300;
+    }
+
+    .form-group {
+      margin-bottom: 1.4rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      color: var(--ink);
+      background: var(--paper);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200,164,90,0.12);
+      background: #fff;
+    }
+
+    input::placeholder { color: #c0bab2; }
+
+    .amount-wrapper {
+      position: relative;
+    }
+
+    .currency-symbol {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 500;
+      pointer-events: none;
+    }
+
+    .amount-wrapper input { padding-left: 1.8rem; }
+
+    .deposit-preview {
+      background: linear-gradient(135deg, #faf6ee, #f5efe2);
+      border: 1px solid rgba(200,164,90,0.3);
+      border-radius: 3px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.6rem;
+      display: none;
+    }
+
+    .deposit-preview.visible { display: block; }
+
+    .deposit-preview .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .deposit-preview .amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin-top: 0.2rem;
+    }
+
+    .deposit-preview .breakdown {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      background: #fdf0f0;
+      border: 1px solid rgba(185,64,64,0.2);
+      color: var(--error);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .secure-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .secure-note svg { width: 13px; height: 13px; fill: var(--muted); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.8rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      </div>
+      <h1>Pay Your Deposit</h1>
+      <p class="subtitle">Secure 20% deposit to confirm your booking</p>
+    </div>
+
+    <hr class="divider"/>
+
+    <div class="form-group">
+      <label for="customerName">Your Name</label>
+      <input type="text" id="customerName" placeholder="e.g. John Smith"/>
+    </div>
+
+    <div class="form-group">
+      <label for="jobDescription">Job / Service Description</label>
+      <input type="text" id="jobDescription" placeholder="e.g. Kitchen renovation"/>
+    </div>
+
+    <div class="form-group">
+      <label for="totalAmount">Total Job Price (£)</label>
+      <div class="amount-wrapper">
+        <span class="currency-symbol">£</span>
+        <input type="number" id="totalAmount" placeholder="0.00" min="1" step="0.01" oninput="updatePreview()"/>
+      </div>
+    </div>
+
+    <div class="deposit-preview" id="depositPreview">
+      <div class="label">Deposit Due Today (20%)</div>
+      <div class="amount" id="depositAmount">£0.00</div>
+      <div class="breakdown" id="depositBreakdown"></div>
+    </div>
+
+    <button id="payBtn" onclick="payDeposit()">
+      <span id="btnText">Proceed to Secure Payment</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <p class="secure-note">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      Payments secured by Stripe · SSL encrypted
+    </p>
+  </div>
+
+  <script>
+    function updatePreview() {
+      const total = parseFloat(document.getElementById('totalAmount').value);
+      const preview = document.getElementById('depositPreview');
+      const depositAmount = document.getElementById('depositAmount');
+      const depositBreakdown = document.getElementById('depositBreakdown');
+
+      if (total && total > 0) {
+        const deposit = (total * 0.20).toFixed(2);
+        depositAmount.textContent = `£${deposit}`;
+        depositBreakdown.textContent = `20% of £${total.toFixed(2)} total`;
+        preview.classList.add('visible');
+      } else {
+        preview.classList.remove('visible');
+      }
+    }
+
+    async function payDeposit() {
+      const totalAmount = document.getElementById('totalAmount').value;
+      const customerName = document.getElementById('customerName').value.trim();
+      const jobDescription = document.getElementById('jobDescription').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const btn = document.getElementById('payBtn');
+      const btnText = document.getElementById('btnText');
+      const spinner = document.getElementById('spinner');
+
+      errorMsg.style.display = 'none';
+
+      if (!totalAmount || parseFloat(totalAmount) <= 0) {
+        errorMsg.textContent = 'Please enter a valid total amount.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      // Show loading
+      btn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'block';
+
+      try {
+        const response = await fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ totalAmount, customerName, jobDescription }),
+        });
+
+        const data = await response.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        errorMsg.textContent = err.message || 'Could not connect to payment server. Please try again.';
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        spinner.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

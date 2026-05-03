@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Successful</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f9f6f1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2ddd6;
+      border-radius: 4px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 2px 40px rgba(15,14,13,0.07);
+    }
+    .icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .icon svg { width: 32px; height: 32px; fill: white; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: #0f0e0d; margin-bottom: 0.75rem; }
+    p { color: #7a746c; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0.5rem; }
+    .amount { font-family: 'Playfair Display', serif; font-size: 2rem; color: #2d6a4f; margin: 1rem 0; }
+    .back-btn {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.85rem 2rem;
+      background: linear-gradient(135deg, #c8a45a, #a8843a);
+      color: white;
+      text-decoration: none;
+      border-radius: 3px;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <h1>Payment Received!</h1>
+    <p>Thank you — your deposit has been successfully processed.</p>
+    <div class="amount" id="paidAmount"></div>
+    <p>You'll receive a confirmation email from Stripe shortly. We'll be in touch to confirm your booking.</p>
+    <a href="/" class="back-btn">Back to Home</a>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const amount = params.get('amount');
+    if (amount) {
+      document.getElementById('paidAmount').textContent = `£${amount} paid`;
+    }
+  </script>
+</body>
+</html>
