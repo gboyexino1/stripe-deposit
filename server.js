@@ -4,6 +4,15 @@ const path = require('path');
 
 const app = express();
 
+// Allow requests from your website
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://www.shcleanings.co.uk');
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
@@ -37,8 +46,8 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.BASE_URL || 'http://localhost:3000'}/success.html?amount=${(depositInPence / 100).toFixed(2)}`,
-      cancel_url: `${process.env.BASE_URL || 'http://localhost:3000'}/cancel.html`,
+      success_url: `https://www.shcleanings.co.uk/success.html?amount=${(depositInPence / 100).toFixed(2)}`,
+      cancel_url: `https://www.shcleanings.co.uk/payment.html`,
     });
 
     res.json({ url: session.url });
