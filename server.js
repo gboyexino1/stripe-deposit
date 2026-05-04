@@ -25,8 +25,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Email helper function
-async function sendEmail(subject, html) {
+// Email helper
+async function sendEmail(to, subject, html) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -35,14 +35,14 @@ async function sendEmail(subject, html) {
     },
   });
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER,
+    from: `"SH Cleaning Services" <${process.env.EMAIL_USER}>`,
+    to,
     subject,
     html,
   });
 }
 
-// Webhook must use raw body — register BEFORE express.json()
+// Webhook — raw body required
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -50,7 +50,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature error:', err.message);
+    console.error('Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -59,58 +59,108 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   // ✅ PAYMENT SUCCESSFUL
   if (event.type === 'checkout.session.completed') {
+    const depositPaid = (session.amount_total / 100).toFixed(2);
+
+    // Email to YOU (business owner)
     try {
-      const depositPaid = (session.amount_total / 100).toFixed(2);
       await sendEmail(
+        process.env.EMAIL_USER,
         `✅ Deposit Received — ${meta.customerName || 'Customer'}`,
         `
-          <h2 style="color:green">✅ New Deposit Payment Received</h2>
-          <p><strong>Name:</strong> ${meta.customerName || 'N/A'}</p>
-          <p><strong>Email:</strong> ${meta.customerEmail || 'N/A'}</p>
-          <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
-          <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
-          <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
-          <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
-          <hr/>
-          <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
-          <p><strong>Deposit Paid:</strong> £${depositPaid}</p>
-          <p><strong>Balance Remaining:</strong> £${meta.balance || 'N/A'}</p>
-          <hr/>
-          <p><strong>Items:</strong></p>
-          <pre>${meta.items || 'N/A'}</pre>
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#0f766e;padding:20px;border-radius:8px 8px 0 0;">
+              <h2 style="color:white;margin:0;">✅ New Deposit Payment Received</h2>
+            </div>
+            <div style="background:#f9fafb;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+              <h3 style="color:#0f766e;">Customer Details</h3>
+              <p><strong>Name:</strong> ${meta.customerName || 'N/A'}</p>
+              <p><strong>Email:</strong> ${meta.customerEmail || 'N/A'}</p>
+              <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
+              <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
+              <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
+              <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+              <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
+              <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
+              <p><strong>Deposit Paid:</strong> £${depositPaid}</p>
+              <p><strong>Balance Remaining:</strong> £${meta.balance || 'N/A'}</p>
+            </div>
+          </div>
         `
       );
-      console.log('Success email sent');
-    } catch (emailErr) {
-      console.error('Email error:', emailErr.message);
+    } catch (e) { console.error('Owner email error:', e.message); }
+
+    // Email to CUSTOMER (confirmation)
+    if (meta.customerEmail) {
+      try {
+        await sendEmail(
+          meta.customerEmail,
+          `Booking Confirmed — SH Cleaning Services`,
+          `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0f766e;padding:20px;border-radius:8px 8px 0 0;">
+                <h2 style="color:white;margin:0;">Your Booking is Confirmed! 🎉</h2>
+              </div>
+              <div style="background:#f9fafb;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+                <p style="font-size:16px;">Hi <strong>${meta.customerName || 'there'}</strong>,</p>
+                <p>Thank you for booking with SH Cleaning Services. Your deposit has been received and your booking is confirmed.</p>
+
+                <div style="background:#ccfbf1;border:1px solid #99f6e4;border-radius:8px;padding:16px;margin:16px 0;">
+                  <h3 style="color:#0f766e;margin:0 0 12px 0;">Your Booking Details</h3>
+                  <p style="margin:4px 0;"><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+                  <p style="margin:4px 0;"><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
+                  <p style="margin:4px 0;"><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
+                </div>
+
+                <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
+                  <h3 style="margin:0 0 12px 0;">Payment Summary</h3>
+                  <p style="margin:4px 0;"><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
+                  <p style="margin:4px 0;color:#0f766e;"><strong>Deposit Paid:</strong> £${depositPaid} ✓</p>
+                  <p style="margin:4px 0;"><strong>Balance Due on the Day:</strong> £${meta.balance || 'N/A'}</p>
+                </div>
+
+                <p>If you need to make any changes or have any questions, please don't hesitate to get in touch.</p>
+                <p>We look forward to seeing you soon!</p>
+                <p style="color:#0f766e;font-weight:bold;">The SH Cleaning Services Team</p>
+                <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
+                <p style="font-size:12px;color:#9ca3af;">SH Cleaning Services — Merseyside & Cheshire<br/>
+                <a href="https://www.shcleanings.co.uk" style="color:#0f766e;">www.shcleanings.co.uk</a></p>
+              </div>
+            </div>
+          `
+        );
+      } catch (e) { console.error('Customer email error:', e.message); }
     }
   }
 
-  // ❌ PAYMENT EXPIRED (customer abandoned checkout)
+  // ❌ ABANDONED CHECKOUT
   if (event.type === 'checkout.session.expired') {
     try {
       await sendEmail(
+        process.env.EMAIL_USER,
         `⚠️ Abandoned Booking — ${meta.customerName || 'Customer'} did not pay`,
         `
-          <h2 style="color:orange">⚠️ Customer Did Not Complete Payment</h2>
-          <p>This customer started checkout but did not complete their deposit. You may want to follow up.</p>
-          <hr/>
-          <p><strong>Name:</strong> ${meta.customerName || 'N/A'}</p>
-          <p><strong>Email:</strong> ${meta.customerEmail || 'N/A'}</p>
-          <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
-          <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
-          <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
-          <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
-          <hr/>
-          <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
-          <p><strong>Deposit Due:</strong> £${meta.deposit || 'N/A'}</p>
-          <p><strong>Balance:</strong> £${meta.balance || 'N/A'}</p>
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#d97706;padding:20px;border-radius:8px 8px 0 0;">
+              <h2 style="color:white;margin:0;">⚠️ Customer Did Not Complete Payment</h2>
+            </div>
+            <div style="background:#f9fafb;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+              <p>This customer started checkout but did not complete their deposit. You may want to follow up to recover this booking.</p>
+              <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
+              <p><strong>Name:</strong> ${meta.customerName || 'N/A'}</p>
+              <p><strong>Email:</strong> ${meta.customerEmail || 'N/A'}</p>
+              <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
+              <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
+              <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
+              <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+              <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
+              <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
+              <p><strong>Deposit Due:</strong> £${meta.deposit || 'N/A'}</p>
+              <p><strong>Balance:</strong> £${meta.balance || 'N/A'}</p>
+            </div>
+          </div>
         `
       );
-      console.log('Abandoned booking email sent');
-    } catch (emailErr) {
-      console.error('Email error:', emailErr.message);
-    }
+    } catch (e) { console.error('Abandoned email error:', e.message); }
   }
 
   res.json({ received: true });
@@ -119,7 +169,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Create a Stripe Checkout session for 20% deposit
+// Create Stripe Checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
     const {
@@ -138,20 +188,18 @@ app.post('/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       billing_address_collection: 'required',
-      expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // expires after 30 mins so you get notified quickly
-      line_items: [
-        {
-          price_data: {
-            currency: 'gbp',
-            product_data: {
-              name: `20% Deposit — ${jobDescription || 'Cleaning Service'}`,
-              description: `Deposit for ${customerName || 'customer'}. Total job: £${parseFloat(totalAmount).toFixed(2)}`,
-            },
-            unit_amount: depositInPence,
+      expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
+      line_items: [{
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name: `20% Deposit — ${jobDescription || 'Cleaning Service'}`,
+            description: `Deposit for ${customerName || 'customer'}. Total job: £${parseFloat(totalAmount).toFixed(2)}`,
           },
-          quantity: 1,
+          unit_amount: depositInPence,
         },
-      ],
+        quantity: 1,
+      }],
       mode: 'payment',
       customer_email: customerEmail || undefined,
       metadata: {
@@ -179,6 +227,4 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
