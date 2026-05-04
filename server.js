@@ -6,7 +6,18 @@ const app = express();
 
 // Allow requests from your website
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://www.shcleanings.co.uk');
+  const allowedOrigins = [
+    'https://www.shcleanings.co.uk',
+    'https://shcleanings.co.uk',
+    'http://www.shcleanings.co.uk',
+    'http://shcleanings.co.uk'
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
