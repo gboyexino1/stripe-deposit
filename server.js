@@ -112,7 +112,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
             <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
             <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
             <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
-            <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+            <p><strong>Service:</strong> ${({'regular':'Regular Standard Cleaning','deep':'Deep Cleaning','eot':'End of Tenancy Cleaning','hoarding':'Hoarding Cleaning'})[meta.jobDescription] || meta.jobDescription || 'N/A'}</p>
             <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
             <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
             <p><strong>Deposit Paid:</strong> £${depositPaid}</p>
@@ -137,7 +137,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
               <p>Thank you for booking with SH Cleaning Services. Your deposit has been received and your booking is confirmed.</p>
               <div style="background:#ccfbf1;border:1px solid #99f6e4;border-radius:8px;padding:16px;margin:16px 0;">
                 <h3 style="color:#0f766e;margin:0 0 12px 0;">Booking Details</h3>
-                <p style="margin:4px 0;"><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+                <p style="margin:4px 0;"><strong>Service:</strong> ${({'regular':'Regular Standard Cleaning','deep':'Deep Cleaning','eot':'End of Tenancy Cleaning','hoarding':'Hoarding Cleaning'})[meta.jobDescription] || meta.jobDescription || 'N/A'}</p>
                 <p style="margin:4px 0;"><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
                 <p style="margin:4px 0;"><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
               </div>
@@ -181,7 +181,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
             <p><strong>Phone:</strong> ${meta.customerPhone || 'N/A'}</p>
             <p><strong>Address:</strong> ${meta.customerAddress || 'N/A'}</p>
             <p><strong>Date & Time:</strong> ${meta.bookingDate || 'N/A'} ${meta.bookingTime || ''}</p>
-            <p><strong>Service:</strong> ${meta.jobDescription || 'N/A'}</p>
+            <p><strong>Service:</strong> ${({'regular':'Regular Standard Cleaning','deep':'Deep Cleaning','eot':'End of Tenancy Cleaning','hoarding':'Hoarding Cleaning'})[meta.jobDescription] || meta.jobDescription || 'N/A'}</p>
             <hr style="border:1px solid #e5e7eb;margin:16px 0;"/>
             <p><strong>Total Job Value:</strong> £${meta.totalAmount || 'N/A'}</p>
             <p><strong>Deposit Due:</strong> £${meta.deposit || 'N/A'}</p>
