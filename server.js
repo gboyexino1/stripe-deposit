@@ -1,10 +1,38 @@
 const express = require('express');
+const fs = require('fs');
+const BOOKINGS_FILE = '/tmp/booked_slots.json';
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { Resend } = require('resend');
 const path = require('path');
 
 const app = express();
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Booked slots helpers
+function getBookedSlots() {
+  try {
+    if (fs.existsSync(BOOKINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(BOOKINGS_FILE, 'utf8'));
+    }
+  } catch(e) {}
+  return [];
+}
+
+function saveBookedSlot(date, time) {
+  const slots = getBookedSlots();
+  slots.push({ date, time, bookedAt: new Date().toISOString() });
+  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(slots));
+}
+
+function parseTimeToHour(timeStr) {
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return null;
+  let h = parseInt(match[1]);
+  const ampm = match[3].toUpperCase();
+  if (ampm === 'PM' && h !== 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return h;
+}
 
 // Allow requests from your website
 app.use((req, res, next) => {
@@ -36,6 +64,11 @@ function sendEmail(to, subject, html) {
   }).catch(err => console.error('Email error:', err.message));
 }
 
+// Return booked slots for the booking page to check
+app.get('/booked-slots', (req, res) => {
+  res.json(getBookedSlots());
+});
+
 // Webhook — raw body required
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -57,6 +90,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   // ✅ PAYMENT SUCCESSFUL
   if (event.type === 'checkout.session.completed') {
     const depositPaid = (session.amount_total / 100).toFixed(2);
+
+    // Save booked slot to block it for other customers
+    if (meta.bookingDate && meta.bookingTime) {
+      saveBookedSlot(meta.bookingDate, meta.bookingTime);
+    }
 
     // Email to YOU
     sendEmail(
