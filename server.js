@@ -1,9 +1,10 @@
 const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const path = require('path');
 
 const app = express();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Allow requests from your website
 app.use((req, res, next) => {
@@ -25,21 +26,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Email helper using IONOS
+// Email helper using Resend
 function sendEmail(to, subject, html) {
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.ionos.co.uk',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: { rejectUnauthorized: false }
-  });
-  // Return promise but don't await — fire and forget
-  return transporter.sendMail({
-    from: `"SH Cleaning Services" <${process.env.EMAIL_USER}>`,
+  return resend.emails.send({
+    from: 'SH Cleaning Services <support@shcleanings.co.uk>',
     to,
     subject,
     html,
@@ -58,7 +48,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Respond to Stripe IMMEDIATELY before doing anything else
+  // Respond to Stripe IMMEDIATELY
   res.json({ received: true });
 
   const session = event.data.object;
